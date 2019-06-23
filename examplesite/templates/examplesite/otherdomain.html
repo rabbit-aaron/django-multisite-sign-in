@@ -1,0 +1,34 @@
+{% load examplesite %}
+{% other_domains as domains %}
+<!DOCTYPE html>
+<html>
+<head>
+    {{ domains|json_script:"domains" }}
+</head>
+<body>
+<script>
+(function() {
+  function setCookie(cname, cvalue, exdays) {
+    var d = new Date();
+    d.setTime(d.getTime() + (exdays * 24 * 60 * 60 * 1000));
+    var expires = "expires=" + d.toUTCString();
+    document.cookie = cname + "=" + cvalue + ";" + expires + ";path=/";
+  }
+  var domains = JSON.parse(document.getElementById("domains").textContent);
+
+  var trustedSources = domains.map(function(domain) {
+    return "https://" + domain;
+  });
+
+  window.addEventListener("message", function(e) {
+    if (!e.origin in trustedSources) {
+      return;
+    }
+    var sessionID = e.data;
+    // you can probably get your cookie expiry from your django view, so all of your cookie expires at the same time
+    setCookie("sessionid", sessionID, 365);
+  }, false);
+})();
+</script>
+</body>
+</html>

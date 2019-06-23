@@ -1,0 +1,70 @@
+{% load examplesite %}
+{% other_domains as domains %}
+{% url "other_domain" as other_domain_path %}
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Example Site</title>
+    <style>
+      .invisible {
+        display:none;
+      }
+    </style>
+    {{ domains|json_script:"domains" }}
+    {{ other_domain_path|json_script:"other-domain-path"}}
+</head>
+<body>
+{% block content %}
+Welcome {{ request.user.username }}!
+<a href="{% url "logout" %}">Logout</a>
+{% endblock %}
+<script>
+(function() {
+  function getCookie(cname) {
+    var name = cname + "=";
+    var decodedCookie = decodeURIComponent(document.cookie);
+    var ca = decodedCookie.split(";");
+    for (var i = 0; i < ca.length; i++) {
+      var c = ca[i];
+      while (c.charAt(0) == " ") {
+        c = c.substring(1);
+      }
+      if (c.indexOf(name) == 0) {
+        return c.substring(name.length, c.length);
+      }
+    }
+    return "";
+  }
+
+  function postSessionID(id) {
+    var domains = JSON.parse(document.getElementById("domains").textContent);
+    var path = JSON.parse(document.getElementById("other-domain-path").textContent);
+    domains.forEach(function(domain) {
+      var src = "https://" + domain + path;
+      var iframeEl = document.createElement("iframe");
+      iframeEl.setAttribute("class", "invisible");
+      iframeEl.setAttribute("src", src);
+      (function(id) { // this is an async call in a loop, create a closure here to protect "id"
+        iframeEl.addEventListener("load", function() {
+          this.contentWindow.postMessage(id, this.getAttribute("src"));
+        });
+      })(id);
+      document.body.appendChild(iframeEl);
+    });
+  }
+
+  function main() {
+    var sessionID = getCookie("sessionid");
+    if (!sessionID) {
+      return;
+    }
+    postSessionID(sessionID);
+  }
+
+  main();
+
+})();
+
+</script>
+</body>
+</html>
